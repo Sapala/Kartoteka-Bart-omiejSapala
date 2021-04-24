@@ -1,7 +1,10 @@
 ﻿using DataBase;
+using DataBase.Dao;
 using DataBase.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,44 +37,145 @@ namespace Kartoteka_BartłomiejSapala.Controllers
         // GET: UserController/Create
         public ActionResult Create()
         {
+            ViewBag.Permissions = new SelectList(_context.Permissions, "Id", "Name");
             return View();
         }
 
         // POST: UserController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public ActionResult Create([Bind("Login,Password,ConfirmPassword,Name,LastName,Pesel,PermissionId,PlaceOfBirth,DateOfBirth,Workplace")] User user)
         {
             try
             {
-                return RedirectToAction(nameof(Index));
+                if (ModelState.IsValid)
+                {
+                    bool checkLogin = new UserDao().CheckUserLogin(_context, user.Login, null);
+                    bool checkPesel = new UserDao().CheckUserPesel(_context, user.Pesel, null);
+
+                    if(checkLogin || checkPesel)
+                    {
+                        if(checkLogin)
+                            ModelState.AddModelError("Login", "Użytkownik o takiej nazwie już istnieje");
+
+                        if(checkPesel)
+                            ModelState.AddModelError("Pesel", "Użytkownik o taki numerze Pesel już istnieje");
+
+                        ViewBag.Permissions = new SelectList(_context.Permissions, "Id", "Name");
+                        return View();
+                    }
+
+                    _context.Users.Add(user);
+                    _context.SaveChanges();
+
+                    if (user.PermissionId != null)
+                    {
+                        Permission permission = _context.Permissions.Find(user.PermissionId);
+                        if (permission != null)
+                        {
+                            UserPermission userPermission = new UserPermission(user.Id, permission);
+                            _context.UserPermission.Add(userPermission);
+                            _context.SaveChanges();
+
+                        }
+                    }
+
+                    return RedirectToAction(nameof(CreateComplete));
+                }
+
+                return View();
             }
-            catch
+            catch(Exception e)
             {
                 return View();
             }
         }
 
+        public ActionResult CreateComplete()
+        {
+
+            return View();
+        }
+
+
         // GET: UserController/Edit/5
         public ActionResult Edit(int id)
         {
-            return View();
+            User user = _context.Users.Where(u => u.Id == id).FirstOrDefault();
+            if (user == null)
+                return NotFound();
+            else
+            {
+                if (user.Permission != null)
+                    ViewBag.Permissions = new SelectList(_context.Permissions, "Id", "Name", user.Permission.Id);
+                else
+                    ViewBag.Permissions = new SelectList(_context.Permissions, "Id", "Name");
+
+                return View(user);
+            }
         }
 
         // POST: UserController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public ActionResult Edit(int id, [Bind("Id,Login,Password,ConfirmPassword,Name,LastName,Pesel,PermissionId,PlaceOfBirth,DateOfBirth,Workplace")] User user)
         {
             try
             {
-                return RedirectToAction(nameof(Index));
+                if (id == 0)
+                    return NotFound();
+                else
+                {
+                    bool checkLogin = new UserDao().CheckUserLogin(_context, user.Login, user.Id);
+                    bool checkPesel = new UserDao().CheckUserPesel(_context, user.Pesel, user.Id);
+
+                    if (checkLogin || checkPesel)
+                    {
+                        if (checkLogin)
+                            ModelState.AddModelError("Login", "Użytkownik o takiej nazwie już istnieje");
+
+                        if (checkPesel)
+                            ModelState.AddModelError("Pesel", "Użytkownik o taki numerze Pesel już istnieje");
+
+                        ViewBag.Permissions = new SelectList(_context.Permissions, "Id", "Name");
+                        return View();
+                    }
+
+
+                    if (user.PermissionId != null)
+                    {
+                        var UserPemissionExist = new UserPermissionDao().GetByUserId(user.Id);
+                        if (UserPemissionExist == null)
+                        {
+                            Permission permission = _context.Permissions.Find(user.PermissionId);
+                            if (permission != null)
+                            {
+                                UserPermission userPermission = new UserPermission(user.Id, permission);
+                                _context.UserPermission.Add(userPermission);
+                                _context.SaveChanges();
+                            }
+                        }
+                        else if (UserPemissionExist != null && UserPemissionExist.PermissionId != user.PermissionId)
+                        {
+                            UserPemissionExist.Permission = _context.Permissions.Find(user.PermissionId);
+                            _context.UserPermission.Update(UserPemissionExist);
+                            _context.SaveChanges();
+                        }
+                    }
+
+                    _context.Users.Update(user);
+                    _context.SaveChanges();
+                    return RedirectToAction(nameof(CreateComplete));
+                }
+
+
             }
-            catch
+            catch(Exception e)
             {
                 return View();
             }
-        }
+
+         }
 
         // GET: UserController/Delete/5
         public ActionResult Delete(int id)

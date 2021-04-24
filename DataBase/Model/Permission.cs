@@ -12,6 +12,7 @@ namespace DataBase.Model
         [Key]
         public int Id { get; set; }
         public string Code { get; set; }
+        [Display(Name = "Uprawnienia")]
         public string Name { get; set; }
 
     }
