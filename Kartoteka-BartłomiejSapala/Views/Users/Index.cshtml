@@ -81,9 +81,9 @@
                     <td>
                         @Html.DisplayFor(modelItem => item.Permission.Name)
                     </td>
-                    <td class="text-right">
+                    <td class="d-inline-flex justify-content-center">
                         <button class="EditBtn btn btn-primary btn-sm mr-2" value="@item.Id">Edytuj</button>
-                        <button class="DeleteBtn btn btn-danger btn-sm" value="@item.Id">Usuń</button>
+                        <button class="DeleteBtn btn btn-danger btn-sm" data-login="@item.Login" value="@item.Id">Usuń</button>
                     </td>
                 </tr>
             }
@@ -91,27 +91,42 @@
 
     </tbody>
 </table>
-@section Scripts 
+@section Scripts
 {
     <script type="text/javascript">
 
         $(document).ready(function () {
             $('#CreateBtn').click(function () {
-                popupwindow(window.location.href + 'Users/Create', 'Dodaj użytkownika', 900, 700);
+                OpenWindow(window.location.href + 'Users/Create', 'Dodaj użytkownika', 900, 700);
             })
             $('.EditBtn').click(function () {
-                popupwindow(window.location.href + 'Users/Edit?id=' + this.value, 'Edytuj użytkownika', 900, 700);
+                OpenWindow(window.location.href + 'Users/Edit?id=' + this.value, 'Edytuj użytkownika', 900, 700);
             })
             $('.DeleteBtn').click(function () {
-                popupwindow(window.location.href + 'Users/Delete?' + this.value, 'Usuń użytkownika', 900, 700);
+                var name = $(this).attr('data-login');
+                var r = confirm("Czy chcesz usunąć użytkownika: " + name);
+                if (r == true) {
+
+                    $.post("Users/Delete?id=", { id: parseInt(this.value)})
+                        .done(res => {
+                            if (res === "OK")
+                                location.reload();
+                        })
+                        .fail(() => {
+                            alert("Wystąpił błąd w połączeniu");
+                        })
+                }
             })
+
         })
 
-        var popupwindow = function (url, title, w, h) {
+        var OpenWindow = function  (url, title, w, h) {
             var left = (screen.width / 2) - (w / 2);
             var top = (screen.height / 2) - (h / 2);
             return window.open(url, title, 'toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width=' + w + ', height=' + h + ', top=' + top + ', left=' + left);
         };
+
+
 
     </script>
 }

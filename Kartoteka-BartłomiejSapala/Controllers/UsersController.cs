@@ -21,27 +21,18 @@ namespace Kartoteka_BartłomiejSapala.Controllers
             _context = context;
         }
 
-        // GET: UserController
         public ActionResult Index()
         {
             IEnumerable<User> result = _context.Users;
             return View(result);
         }
 
-        // GET: UserController/Details/5
-        public ActionResult Details(int id)
-        {
-            return View();
-        }
-
-        // GET: UserController/Create
         public ActionResult Create()
         {
             ViewBag.Permissions = new SelectList(_context.Permissions, "Id", "Name");
             return View();
         }
 
-        // POST: UserController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Create([Bind("Login,Password,ConfirmPassword,Name,LastName,Pesel,PermissionId,PlaceOfBirth,DateOfBirth,Workplace")] User user)
@@ -97,8 +88,6 @@ namespace Kartoteka_BartłomiejSapala.Controllers
             return View();
         }
 
-
-        // GET: UserController/Edit/5
         public ActionResult Edit(int id)
         {
             User user = _context.Users.Where(u => u.Id == id).FirstOrDefault();
@@ -115,7 +104,6 @@ namespace Kartoteka_BartłomiejSapala.Controllers
             }
         }
 
-        // POST: UserController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Edit(int id, [Bind("Id,Login,Password,ConfirmPassword,Name,LastName,Pesel,PermissionId,PlaceOfBirth,DateOfBirth,Workplace")] User user)
@@ -177,19 +165,27 @@ namespace Kartoteka_BartłomiejSapala.Controllers
 
          }
 
-        // GET: UserController/Delete/5
-        public ActionResult Delete(int id)
-        {
-            return View();
-        }
-
-        // POST: UserController/Delete/5
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+
+        public ActionResult Delete(int id)
         {
             try
             {
+                if (id != 0)
+                {
+                    User user = _context.Users.Find(id);
+                    if (user != null)
+                    {
+                        UserPermission userPermission = new UserPermissionDao().GetByUserId(user.Id);
+                        if(userPermission != null)
+                        {
+                            _context.UserPermission.Remove(userPermission);
+                            _context.Users.Remove(user);
+                            _context.SaveChanges();
+                            return Json("OK");
+                        }
+                    }
+                }
                 return RedirectToAction(nameof(Index));
             }
             catch
