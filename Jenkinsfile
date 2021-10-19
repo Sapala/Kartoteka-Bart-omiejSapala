@@ -8,18 +8,18 @@ pipeline {
     stages {
         stage('Restore packages'){
            steps{
-               bat 'dotnet restore Kartoteka-BartłomiejSapala\Kartoteka-BartłomiejSapala.csproj'
+               bat 'dotnet restore Kartoteka-BartłomiejSapala/Kartoteka-BartłomiejSapala.csproj'
             }
          }
         stage('Clean'){
            steps{
-               bat 'dotnet clean Kartoteka-BartłomiejSapala\Kartoteka-BartłomiejSapala.csproj --configuration Release'
+               bat 'dotnet clean Kartoteka-BartłomiejSapala/Kartoteka-BartłomiejSapala.csproj --configuration Release'
             }
          }
         
         stage('Build project'){
             steps{
-                bat 'dotnet build Kartoteka-BartłomiejSapala\Kartoteka-BartłomiejSapala.csproj'
+                bat 'dotnet build Kartoteka-BartłomiejSapala/Kartoteka-BartłomiejSapala.csproj'
             }
         }
 
